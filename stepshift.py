@@ -19,5 +19,4 @@ def stepshift(
     except ValueError:
         raise TypeError("Could not unpack index. Expected a multiindex of length 2")
 
-    for step in steps:
-        fn(outcomes, inputs[(step * n_units) - n_units:,:])
+    return {s: fn(outcomes, inputs[(s* n_units) - n_units:, :]) for s in steps}

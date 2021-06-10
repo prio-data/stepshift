@@ -15,8 +15,9 @@ class TestStepShifting(TestCase):
         reported_outcomes = []
         reported_inputs = []
 
-        def report(y,x):
-            reported_outcomes.append(y[0])
+        def report(y,_):
+            return y[0]
 
-        stepshift.stepshift(dataframe, report, [1,2,3], outcome = "a")
-        self.assertEqual(set(reported_outcomes),{1})
+        results = stepshift.stepshift(dataframe, report, [1,2,3], outcome = "a")
+        self.assertEqual({1}, set(results.values()))
+
