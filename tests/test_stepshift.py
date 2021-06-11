@@ -12,12 +12,10 @@ class TestStepShifting(TestCase):
         dataframe = pd.DataFrame(row_prog_array(16))
         dataframe.index = pd.MultiIndex.from_product((range(4),range(4)))
         dataframe.columns = list(string.ascii_letters[:16])
-        reported_outcomes = []
-        reported_inputs = []
 
-        def report(y,_):
-            return y[0]
+        def report(y,xs):
+            return y[0],xs[0,0]
 
         results = stepshift.stepshift(dataframe, report, [1,2,3], outcome = "a")
-        self.assertEqual({1}, set(results.values()))
+        self.assertEqual({(5,1),(9,1),(13,1)}, set(results.values()))
 

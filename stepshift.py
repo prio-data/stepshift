@@ -19,4 +19,9 @@ def stepshift(
     except ValueError:
         raise TypeError("Could not unpack index. Expected a multiindex of length 2")
 
-    return {s: fn(outcomes, inputs[(s* n_units) - n_units:, :]) for s in steps}
+    gen = zip(steps,stepshifted(outcomes,inputs,steps,n_units))
+    return {step: fn(*shifted) for step,shifted in gen}
+
+def stepshifted(outcomes,inputs,steps,stepsize):
+    for step in steps:
+        yield outcomes[((step+1)*stepsize)-stepsize:], inputs[:-(step*stepsize),:]
