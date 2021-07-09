@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stepshift"
-version = "0.2.0"
+version = "0.3.0"
 description = "Time-step shifting modelling logic, used by the ViEWS team for training models."
 authors = ["peder2911 <pglandsverk@gmail.com>"]
 license = "MIT"
@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 pandas = "^1.2.4"
+PyMonad = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 
