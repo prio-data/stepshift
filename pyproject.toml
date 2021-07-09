@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stepshift"
-version = "0.1.0"
+version = "0.2.0"
 description = "Time-step shifting modelling logic, used by the ViEWS team for training models."
 authors = ["peder2911 <pglandsverk@gmail.com>"]
 license = "MIT"
