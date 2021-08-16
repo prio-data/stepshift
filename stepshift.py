@@ -32,6 +32,55 @@ def index_draws(
         level: int,
         draw_size: int,
         dataframe: pd.DataFrame)-> Either[str, Generator[ArrayLike, None, None]]:
+    """
+    Function that returns an Either containing a generator of random draws from
+    a dataset. Draws are made at an index level, meaning that a subset of index-
+    units is returned.
+
+    To demonstrate, let data be a dataframe containing the following rows and
+    columns:
+
+    unit*| time*| value
+    -------------------
+       0 |    0 |     1
+       0 |    1 |     2
+       0 |    2 |     3
+       1 |    0 |     4
+       1 |    1 |     5
+       1 |    2 |     6
+       2 |    0 |     7
+       2 |    1 |     8
+       2 |    2 |     9
+
+    This dataset may be subset on either index columns (marked by *). If
+    level=0 (in this case, unit*), then the generator will yield rows with
+    N=draw_size unique values in the unit* column:
+
+    index_draws(level=0, draw_size=2, data)
+
+    unit*| time*| value
+    -------------------
+       0 |    0 |     1
+       0 |    1 |     2
+       0 |    2 |     3
+       2 |    0 |     7
+       2 |    1 |     8
+       2 |    2 |     9
+
+    If level=1 (time*), the same operation could yield the following data:
+
+    index_draws(level=1, draw_size=2, data)
+
+    unit*| time*| value
+    -------------------
+       0 |    0 |     1
+       0 |    2 |     3
+       1 |    0 |     4
+       1 |    2 |     6
+       2 |    0 |     7
+       2 |    2 |     9
+    """
+
     def draws(which, from_what)-> Generator[ArrayLike, None, None]:
         for pick in which:
             mask = np.full(len(from_what),False)
