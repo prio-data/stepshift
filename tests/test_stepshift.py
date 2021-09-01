@@ -13,9 +13,9 @@ class TestStepShifting(TestCase):
         dataframe.index = pd.MultiIndex.from_product((range(4),range(4)))
         dataframe.columns = list(string.ascii_letters[:16])
 
-        def report(y,xs):
-            return y[0],xs[0,0]
+        o,i = stepshift.separate_on_column("a",dataframe)
+        o,i = stepshift.stepshift(o, i, 1)
+        print(o)
+        print(i)
 
-        results = stepshift.stepshift(dataframe, report, [1,2,3], outcome = "a")
-        self.assertEqual({(5,1),(9,1),(13,1)}, set(results.values()))
-
+        self.assertFalse(False)

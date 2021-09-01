@@ -6,9 +6,12 @@ authors = ["peder2911 <pglandsverk@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.10"
 pandas = "^1.2.4"
 PyMonad = "^2.4.0"
+toolz = "^0.11.1"
+numba = "^0.54.0"
+Cython = "^0.29.24"
 
 [tool.poetry.dev-dependencies]
 
