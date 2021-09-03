@@ -16,7 +16,7 @@ jobs:
 
          - name: "Dependencies"
            run: |
-              pip install twine setuptools
+              pip install . 
 
          - name: "Build"
            run: python setup.py sdist 
