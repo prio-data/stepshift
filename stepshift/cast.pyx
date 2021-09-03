@@ -1,6 +1,7 @@
 cimport numpy as c_np
 import numpy as np
 import pandas as pd
+import xarray
 
 cdef (int, int) minmax(double[:] arr):
     cdef double min = np.inf
@@ -24,7 +25,7 @@ cdef (int) find_index(int idx, c_np.int_t[:] arr):
             break
     return i
 
-def time_unit_feature_cube(dataframe):
+def time_unit_feature_cube(matrix : np.ndarray)-> xarray.DataArray:
     """
     This function casts a matrix into a time_unit_feature cube,
     which is a useful transformation when indexing in the
@@ -34,15 +35,9 @@ def time_unit_feature_cube(dataframe):
     and the second column holds the UNIT index. The remaining columns
     are assumed to be FEATURES.
     """
+    cdef double [:,:] raw_matrix_view = matrix.data
 
-    # First some setup
-    cdef double[:,:] raw_matrix_view = (dataframe
-            .sort_index(level=[1,0]) # The DF is sorted to enable a much 
-            .reset_index()           # faster unit-indexing scheme.
-            .values
-            )
-
-    unique_units = np.unique(raw_matrix_view[:,1])
+    unique_units = np.unique(raw_matrix_view[:,1]).astype(int)
 
     # First figure out how to compute time-indices (min - i)
     cdef int time_min
@@ -76,7 +71,26 @@ def time_unit_feature_cube(dataframe):
             current_u_index = <int> row[1]
             u_index = u_index + 1
 
-        t_index = time_min - <int> row[0] 
+        t_index = <int> row[0] - time_min
         result_view[t_index, u_index, :] = row[2:] 
 
-    return result_array 
+    xa = xarray.DataArray(
+            result_array, 
+            dims=["time","unit","feature"],
+            coords=[
+                np.linspace(time_min,time_max,(time_max-time_min)+1,dtype=int),
+                unique_units,
+                matrix.coords["features"][2:]
+                ]
+            )
+
+    return xa
+
+def views_format_to_castable(dataframe: pd.DataFrame)-> xarray.DataArray:
+    assert len(dataframe.index.levels) == 2
+    df_values = (dataframe
+            .sort_index(level=[1,0]) # The DF is sorted to enable a much 
+            .reset_index()           # faster unit-indexing scheme.
+            .values
+            )
+    return xarray.DataArray(df_values,dims = ("rows","features"), coords = {"features": ["time","unit"]+list(dataframe.columns)})

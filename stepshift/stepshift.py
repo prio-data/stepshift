@@ -1,36 +1,66 @@
-from typing import Callable, Any, Union, Dict, List, Tuple
-from toolz.functoolz import curry
-import pandas as pd
-import numpy as np
+"""Stepshift
+from typing import List
 
-def separate_on_column(
-        on: str,
-        dataframe: pd.DataFrame)-> Tuple[pd.DataFrame, pd.DataFrame]:
-    return (dataframe[on], dataframe[[c for c in dataframe.columns if c != on]])
+Stepshifting is a procedure that is used when training models to predict future
+values of a dependent variable.
 
-def stepshift(outcomes: pd.DataFrame, inputs: pd.DataFrame, shift: int):
-    times = inputs.index.get_level_values(0)
-    start, end = times.min(), times.max()
-    return outcomes.loc[(start + shift)-1:, :], inputs.loc[:end - shift, :]
+In practice, this involves training models on data that is shifted in time,
+relative to the dependent variable. Here is an example with step size 1:
 
-def time_unit_feature_cube(dataframe):
-    span = lambda a: (a.min(),a.max())
+ ──────────────
+ Dependent
+ ┌─┐┌─┐┌─┐
+ │0││1││2│
+ └─┘└─┘└─┘
+ ---
+ Independent(s)
+    ^^^^^^---
+    ┌─┐┌─┐┌─┐
+  ─►│0││1││2│
+    └─┘└─┘└─┘
+    ┌─┐┌─┐┌─┐
+  ─►│0││1││2│
+    └─┘└─┘└─┘
+    ┌─┐┌─┐┌─┐
+  ─►│0││1││2│
+    └─┘└─┘└─┘
+ ──────────────
+ --- = masked (subset)
+ ^^^ = predicts
 
-    xmin,xmax = span(dataframe.index.get_level_values(0))
-    ymin,ymax = span(dataframe.index.get_level_values(1))
+The step size determines how far into the future the resulting model will be
+able to predict.
+"""
 
-    projected_index = lambda idx, i: int(i - idx)-1
-    xindex, yindex = map(curry(projected_index), (xmin, ymin))
+from typing import List
+import logging
+import xarray
 
-    size = (
-            xmax - xmin,
-            ymax - ymin,
-            len(dataframe.columns)
-        )
+logger = logging.getLogger(__name__)
 
-    cube = np.full(size, np.NaN)
+def set_feature_as_first(x:str, array: xarray.DataArray)-> xarray.DataArray:
+    try:
+        assert x in array.coords["feature"]
+    except AssertionError:
+        raise ValueError(f"Feature {x} is not a feature in array")
 
-    for _,row in dataframe.reset_index().iterrows():
-        cube[xindex(row[0]), yindex(row[1]), :] = row[2:]
+    wanted_order = [x] + [i for i in array.coords["feature"].data if i != x]
 
-    return cube
+    if wanted_order == list(array.coords["feature"].data):
+        return array
+    else:
+        logger.warning("Reordering feature dimension. "
+                "Save memory by setting the outcome feature as the first column "
+                "in your dataframe."
+                )
+        return array.loc[:,:, wanted_order]
+
+def stepshifted(outcome: str, steps: List[int], array: xarray.DataArray):
+    """
+    Generator which yields a tuple of outcomes and inputs for each time-shift step.
+    """
+    array = set_feature_as_first(outcome, array)
+    outcomes = array[:,:,0]
+    inputs = array[:,:,1:]
+    for step in steps:
+        yield outcomes[step:,:], inputs[:-step,:,:]

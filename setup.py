@@ -19,6 +19,7 @@ setup(
         "pandas~=1.2.4",
         "PyMonad~=2.4.0",
         "toolz~=0.11.1",
+        "xarray~=0.19.0",
         ],
     packages = find_packages(),
     ext_modules = cythonize(
