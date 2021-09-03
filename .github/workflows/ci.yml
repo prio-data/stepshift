@@ -16,7 +16,7 @@ jobs:
 
          - name: "Dependencies"
            run: |
-              pip install cython==3.0.0a9 numpy==1.21.2 setuptools wheel
+              pip install cython==3.0.0a9 numpy==1.21.2 setuptools wheel twine
 
          - name: "Build"
            run: python setup.py sdist 
