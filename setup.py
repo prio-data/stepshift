@@ -13,13 +13,13 @@ extensions = [
 
 setup(
     name = "stepshift",
-    version = "1.0.0",
+    version = "1.0.2",
     python_requires=">=3.8,<3.10",
     install_requires=[
-        "pandas~=1.2.4",
-        "PyMonad~=2.4.0",
-        "toolz~=0.11.1",
-        "xarray~=0.19.0",
+        "pandas>=1.3.2",
+        "PyMonad>=2.4.0",
+        "toolz>=0.11.1",
+        "xarray>=0.19.0",
         ],
     packages = find_packages(),
     ext_modules = cythonize(
