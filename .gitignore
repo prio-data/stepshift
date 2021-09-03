@@ -3,3 +3,8 @@ dist/
 *.py[cod]
 __pycache__
 depr/*
+dist/
+build/
+*.c
+*.so
+*.html
