@@ -8,3 +8,4 @@ build/
 *.c
 *.so
 *.html
+*.egg-info/

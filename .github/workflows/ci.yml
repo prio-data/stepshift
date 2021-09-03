@@ -16,10 +16,10 @@ jobs:
 
          - name: "Dependencies"
            run: |
-              pip install poetry twine
+              pip install twine setuptools
 
          - name: "Build"
-           run: poetry build 
+           run: python setup.py sdist 
 
          - name: "Publish"
            run: |
