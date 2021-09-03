@@ -1,0 +1,2 @@
+include stepshift/*.py
+include stepshift/*.pyx
