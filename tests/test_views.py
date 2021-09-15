@@ -18,6 +18,24 @@ class TestViews(unittest.TestCase):
 
         mdl.fit(dat)
         preds = mdl.predict(dat)
-        dat.to_parquet("/tmp/dat.parquet")
-        preds.to_parquet("/tmp/preds.parquet")
 
+        self.assertEqual(preds.shape[1], 12)
+
+    def test_discontinuous_idx(self):
+        i = pd.MultiIndex.from_tuples([
+                (1,1),
+                (2,1),
+                (3,1),
+                (2,2),
+            ], names=("time","unit"))
+
+        dat = pd.DataFrame(
+                np.random.rand(4,2),
+                columns = ["a","b"],
+                index = i)
+        mdl = views.StepshiftedModels(DummyClassifier(),[1,2],"a")
+
+        mdl.fit(dat)
+
+        preds = mdl.predict(dat)
+        self.assertEqual(preds.shape, (10,2))
