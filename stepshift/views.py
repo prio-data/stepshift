@@ -41,7 +41,8 @@ class StepshiftedModels():
             except AssertionError:
                 raise ValueError("Dependent and independent arrays had differing number of rows")
 
-            self._models[step] = clone(self._base_clf).fit(*reversed([*dep_indep.value]))
+            dep,indep = dep_indep.value
+            self._models[step] = clone(self._base_clf).fit(indep,dep.squeeze())
 
     def predict(self, data):
         """
