@@ -70,5 +70,6 @@ class TestViewsUtilities(unittest.TestCase):
         mdl = views.StepshiftedModels(DummyClassifier(),[1,2,3],"a")
         mdl.fit(d)
         preds = mdl.predict(d)
-        print(preds)
-
+        np.testing.assert_array_equal(
+                preds[util.step_pred_column_name(1)].loc[10-2,].values,
+                preds["step_combined"].loc[10-2,].values)
