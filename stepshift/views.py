@@ -111,11 +111,9 @@ class StepshiftedModels():
         df = self._cast_tuf_to_views(preds)
 
         if combine:
-            combined = step_combine(df)
-            df["step_combined"] = np.NaN
-            df["step_combined"].values[-len(combined):] = combined
+            df["step_combined"] = step_combine(df)
 
-        return df #self._cast_tuf_to_views(preds)
+        return df
 
     _cast_views_to_tuf = staticmethod(compose(
         cast.time_unit_feature_cube,

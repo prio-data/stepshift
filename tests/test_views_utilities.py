@@ -4,6 +4,7 @@ import hashlib
 import random
 import pandas as pd
 import numpy as np
+from sklearn.dummy import DummyClassifier
 from stepshift import views, util
 
 class TestViewsUtilities(unittest.TestCase):
@@ -59,4 +60,15 @@ class TestViewsUtilities(unittest.TestCase):
                 np.array([n,n,n,n,n,n,1,2,3,4],dtype=float),
                 sc_series
                 )
+
+    def test_auto_combine(self):
+        d = pd.DataFrame(
+                    np.zeros((16,2)),
+                    index = pd.MultiIndex.from_product((range(8),range(2))),
+                    columns = list("ab")
+                )
+        mdl = views.StepshiftedModels(DummyClassifier(),[1,2,3],"a")
+        mdl.fit(d)
+        preds = mdl.predict(d)
+        print(preds)
 
