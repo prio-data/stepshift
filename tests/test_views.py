@@ -18,7 +18,7 @@ class TestViews(unittest.TestCase):
         mdl = views.StepshiftedModels(DummyClassifier(),[*range(1,13)],"a")
 
         mdl.fit(dat)
-        preds = mdl.predict(dat)
+        preds = mdl.predict(dat, combine = False)
 
         self.assertEqual(preds.shape[1], 12)
 
@@ -38,7 +38,7 @@ class TestViews(unittest.TestCase):
 
         mdl.fit(dat)
 
-        preds = mdl.predict(dat)
+        preds = mdl.predict(dat, combine = False)
         self.assertEqual(preds.shape, (10,2))
 
     def test_predicts_properly(self):

@@ -1,6 +1,8 @@
 import numpy as np
 import xarray
 
+step_pred_column_name = lambda i: f"step_pred_{i}"
+
 def empty_prediction_array(times, units, steps):
     final_t = max(times)
     steps_extent = max(steps)
@@ -24,5 +26,6 @@ def empty_prediction_array(times, units, steps):
                         prediction_period,
                         ]),
                 "unit": units,
-                "feature":[f"step_pred_{i}" for i in steps]
+                "feature": [step_pred_column_name(i) for i in steps]
                 })
+
