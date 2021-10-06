@@ -52,7 +52,7 @@ class StepshiftedModels():
         self._steps = steps
         self._steps_extent = max(steps)
         self._outcome = outcome
-        self._models = dict()
+        self._models = {}
         self._independent_variables = None
 
     def fit(self, data):
@@ -95,6 +95,16 @@ class StepshiftedModels():
             i += 1
 
             raw_predictions = getattr(model, kind)(data[self._independent_variables].values)
+
+            if len(raw_predictions.shape) == 1:
+                pass
+            elif len(raw_predictions.shape) == 2:
+                raw_predictions = raw_predictions[:,raw_predictions.shape[1]]
+            else:
+                raise ValueError(
+                        f"Model produced predictions with {len(raw_predictions.shape)} dims. "
+                        "Expected 1 or 2. (Note, multivariate classification is not supported)."
+                        )
 
             mat = np.stack([
                         raw_idx[:,0]+step,
