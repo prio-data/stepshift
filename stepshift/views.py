@@ -1,10 +1,10 @@
 """
 APIs used by the ViEWS team.
 """
-from typing import List, Optional, Dict
+import re
+from typing import List, Optional, Dict, Literal
 from toolz.functoolz import compose, curry
 from pymonad.maybe import Just, Nothing
-import re
 import xarray as xa
 import numpy as np
 import pandas as pd
@@ -75,7 +75,9 @@ class StepshiftedModels():
             dep,indep = dep_indep.value
             self._models[step] = clone(self._base_clf).fit(indep,dep.squeeze())
 
-    def predict(self, data, combine: bool = True):
+    def _predict(self, data,
+            combine: bool = True,
+            kind: Literal["predict", "predict_proba"] = "predict"):
         """
         Uses the trained models to create a dataset of predictions.
         """
@@ -92,7 +94,7 @@ class StepshiftedModels():
         for step,model in self._models.items():
             i += 1
 
-            raw_predictions = model.predict(data[self._independent_variables].values)
+            raw_predictions = getattr(model, kind)(data[self._independent_variables].values)
 
             mat = np.stack([
                         raw_idx[:,0]+step,
@@ -114,6 +116,11 @@ class StepshiftedModels():
             df["step_combined"] = step_combine(df)
 
         return df
+
+    def predict(self, data, combine: bool = True):
+        return self._predict(data, combine, kind = "predict")
+    def predict_proba(self, data, combine: bool = True):
+        return self._predict(data, combine, kind = "predict_proba")
 
     _cast_views_to_tuf = staticmethod(compose(
         cast.time_unit_feature_cube,
