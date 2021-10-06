@@ -99,7 +99,7 @@ class StepshiftedModels():
             if len(raw_predictions.shape) == 1:
                 pass
             elif len(raw_predictions.shape) == 2:
-                raw_predictions = raw_predictions[:,raw_predictions.shape[1]]
+                raw_predictions = raw_predictions[:,raw_predictions.shape[1]-1]
             else:
                 raise ValueError(
                         f"Model produced predictions with {len(raw_predictions.shape)} dims. "
