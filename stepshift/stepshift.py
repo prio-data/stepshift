@@ -32,7 +32,7 @@ The step size determines how far into the future the resulting model will be
 able to predict.
 """
 
-from typing import List
+from typing import List, Generator, Tuple
 import logging
 import xarray
 
@@ -55,7 +55,11 @@ def set_feature_as_first(x:str, array: xarray.DataArray)-> xarray.DataArray:
                 )
         return array.loc[:,:, wanted_order]
 
-def stepshifted(outcome: str, steps: List[int], array: xarray.DataArray):
+def stepshifted(
+        outcome: str,
+        steps: List[int],
+        array: xarray.DataArray
+        )-> Generator[Tuple[int, xarray.DataArray, xarray.DataArray], None, None]:
     """
     Generator which yields a tuple of outcomes and inputs for each time-shift step.
     """
@@ -63,4 +67,4 @@ def stepshifted(outcome: str, steps: List[int], array: xarray.DataArray):
     outcomes = array[:,:,0]
     inputs = array[:,:,1:]
     for step in steps:
-        yield outcomes[step:,:], inputs[:-step,:,:]
+        yield step, outcomes[step:,:], inputs[:-step,:,:]

@@ -23,8 +23,9 @@ class TestStepshifting(unittest.TestCase):
     def test_shares_memory(self):
         cube = time_unit_feature_cube(views_format_to_castable(self.data))
         steps = stepshifted(self.columns[0], [1,2,3], cube)
-        for step in steps:
-            for mat in step:
+        for _,dep,indep in steps:
+
+            for mat in (dep,indep):
                 self.assertTrue(np.may_share_memory(mat.data, cube.data))
 
     def test_stepshifting(self):
@@ -35,5 +36,5 @@ class TestStepshifting(unittest.TestCase):
 
         steps = [*ss]
 
-        self.assertTrue(all([step[0].shape[0] == step[1].shape[0] for step in steps]))
-        self.assertTrue(all([step[0].shape[1] == step[1].shape[1] for step in steps]))
+        self.assertTrue(all([step[1].shape[0] == step[2].shape[0] for step in steps]))
+        self.assertTrue(all([step[1].shape[1] == step[2].shape[1] for step in steps]))

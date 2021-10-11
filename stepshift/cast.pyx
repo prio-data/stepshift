@@ -94,3 +94,11 @@ def views_format_to_castable(dataframe: pd.DataFrame)-> xarray.DataArray:
             .values
             )
     return xarray.DataArray(df_values,dims = ("rows","features"), coords = {"features": ["time","unit"]+list(dataframe.columns)})
+
+def stack_time_unit_feature_cube(cube: xarray.DataArray)-> xarray.DataArray:
+    return cube.stack({"rows": ("time","unit")}).transpose()
+
+def tuf_cube_as_dataframe(cube):
+    df = cube.to_dataframe(name="predictions").reset_index().pivot(index=["time","unit"],columns="feature")
+    df.columns = df.columns.droplevel(0)
+    return df 
