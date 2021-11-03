@@ -9,7 +9,7 @@ import xarray as xa
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from stepshift import stepshift, cast, util, ops
+from stepshift import stepshift, cast, ops
 
 def step_combine(
         predictions: pd.DataFrame,
@@ -75,59 +75,6 @@ class StepshiftedModels():
             dep,indep = dep_indep.value
             self._models[step] = clone(self._base_clf).fit(indep,dep.squeeze())
 
-    def _predict(self, data,
-            combine: bool = True,
-            kind: Literal["predict", "predict_proba"] = "predict"):
-        """
-        Uses the trained models to create a dataset of predictions.
-        """
-
-        data = data.sort_index(level = [1,0])
-
-        preds = util.empty_prediction_array(
-                np.unique(data.index.get_level_values(0)),
-                np.unique(data.index.get_level_values(1)),
-                self._steps)
-
-        raw_idx = np.array([np.array(i) for i in data.index.values])
-
-        i = -1
-        for step,model in self._models.items():
-            i += 1
-
-            raw_predictions = getattr(model, kind)(data[self._independent_variables].values)
-
-            if len(raw_predictions.shape) == 1:
-                pass
-            elif len(raw_predictions.shape) == 2:
-                raw_predictions = raw_predictions[:,raw_predictions.shape[1]-1]
-            else:
-                raise ValueError(
-                        f"Model produced predictions with {len(raw_predictions.shape)} dims. "
-                        "Expected 1 or 2. (Note, multivariate classification is not supported)."
-                        )
-
-            mat = np.stack([
-                        raw_idx[:,0]+step,
-                        raw_idx[:,1],
-                        raw_predictions,
-                    ], axis = 1)
-
-            cube = cast.time_unit_feature_cube(
-                    xa.DataArray(mat, dims = ("rows","features"))
-                    )
-
-            pred_start,pred_end = [fn(cube.coords["time"]) for fn in (min,max)]
-            feature_columns = preds.coords["feature"][i]
-            preds.loc[pred_start:pred_end, :, feature_columns] = cube.data.squeeze()
-
-        df = self._cast_tuf_to_views(preds)
-
-        if combine:
-            df["step_combined"] = step_combine(df)
-
-        return df
-
     def predict(self, data, combine: bool = True):
         """
         Creates a dataset of predictions using the predict method of the
@@ -142,6 +89,107 @@ class StepshiftedModels():
         """
         return self._predict(data, combine, kind = "predict_proba")
 
+    @staticmethod
+    def step_pred_column_name(i: int)-> str:
+        return f"step_pred_{i}"
+
+    @property
+    def models(self):
+        return self._models
+
+    @staticmethod
+    def _pre_sort(data: pd.DataFrame)-> pd.DataFrame:
+        """
+        Ensures data is sorted by UNIT-TIME. Necessary to avoid issues with the stepshifting algorithm.
+        """
+        return data.sort_index(level = [1,0])
+
+    @staticmethod
+    def _ensure_predictions_shape(predictions: np.ndarray)-> np.ndarray:
+        """
+        Handles output from models, ensuring it is one-dimensional.
+        """
+
+        if len(predictions.shape) == 1:
+            return predictions
+        elif len(predictions.shape) == 2:
+            return predictions[:,predictions.shape[1]-1]
+        else:
+            raise ValueError(
+                    f"Model produced predictions with {len(predictions.shape)} dims. "
+                    "Expected 1 or 2. (Note, multivariate classification is not supported)."
+                    )
+
+    def _empty_prediction_array(self, times: int, units: int, steps: int):
+        """
+        Create an empty array for storing predictions; a 3rd order tensor
+        (cube) with TIME-UNIT-FEATURE dimensions.
+        """
+        final_t = max(times)
+        steps_extent = max(steps)
+
+        prediction_period = np.linspace(
+            final_t + 1,
+            final_t + steps_extent,
+            steps_extent,
+            dtype = int)
+
+        return xa.DataArray(
+                np.full((
+                    len(times) + steps_extent,
+                    len(units),
+                    len(steps)),
+                    np.NaN),
+                dims = ("time","unit","feature"),
+                coords = {
+                    "time": np.concatenate([
+                            times,
+                            prediction_period,
+                            ]),
+                    "unit": units,
+                    "feature": [self.step_pred_column_name(i) for i in steps]
+                    })
+
+    def _predict(self, data,
+            combine: bool = True,
+            kind: Literal["predict", "predict_proba"] = "predict"):
+        """
+        Uses the trained models to create a dataset of predictions.
+        """
+
+        data = self._pre_sort(data)
+
+        preds = self._empty_prediction_array(
+                np.unique(data.index.get_level_values(0)),
+                np.unique(data.index.get_level_values(1)),
+                self._steps)
+
+        raw_idx = np.array([np.array(i) for i in data.index.values])
+        for step_column_name, (step, model) in zip(preds.coords["feature"],self._models.items()):
+
+            raw_predictions = self._ensure_predictions_shape(
+                    getattr(model, kind)(data[self._independent_variables].values))
+
+            mat = np.stack([
+                        raw_idx[:,0]+step,
+                        raw_idx[:,1],
+                        raw_predictions,
+                    ], axis = 1)
+
+            cube = cast.time_unit_feature_cube(
+                    xa.DataArray(mat, dims = ("rows","features"))
+                    )
+
+            pred_start, pred_end = [fn(cube.coords["time"]) for fn in (min,max)]
+            preds.loc[pred_start:pred_end, :, step_column_name] = cube.data.squeeze()
+
+        df = self._cast_tuf_to_views(preds)
+
+        if combine:
+            df["step_combined"] = step_combine(df)
+
+        return df
+
     _cast_views_to_tuf = staticmethod(compose(
         cast.time_unit_feature_cube,
         cast.views_format_to_castable))
@@ -149,7 +197,7 @@ class StepshiftedModels():
     _cast_tuf_to_views = staticmethod(cast.tuf_cube_as_dataframe)
 
 def infer_column_step_mapping(names: str):
-    step_pred_column_name_regex = f"(?<={util.step_pred_column_name('')})[0-9]+"
+    step_pred_column_name_regex = f"(?<={StepshiftedModels.step_pred_column_name('')})[0-9]+"
     step_name_from_column_name = compose(
             lambda m: m.maybe(None,int),
             lambda m: Just(m.group()) if m else Nothing,
