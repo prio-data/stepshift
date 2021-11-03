@@ -81,6 +81,7 @@ class StepshiftedModels():
         """
         Uses the trained models to create a dataset of predictions.
         """
+
         data = data.sort_index(level = [1,0])
 
         preds = util.empty_prediction_array(
@@ -128,8 +129,17 @@ class StepshiftedModels():
         return df
 
     def predict(self, data, combine: bool = True):
+        """
+        Creates a dataset of predictions using the predict method of the
+        model(s).
+        """
         return self._predict(data, combine, kind = "predict")
+
     def predict_proba(self, data, combine: bool = True):
+        """
+        Creates a dataset of predictions using the predict_proba method of the
+        model(s).
+        """
         return self._predict(data, combine, kind = "predict_proba")
 
     _cast_views_to_tuf = staticmethod(compose(
