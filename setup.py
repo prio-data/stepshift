@@ -13,7 +13,7 @@ extensions = [
 
 setup(
     name = "stepshift",
-    version = "2.0.0",
+    version = "2.1.0",
     python_requires=">=3.8,<3.10",
     install_requires=[
         "pandas>=1.3.2",
