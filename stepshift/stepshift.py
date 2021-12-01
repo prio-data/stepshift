@@ -1,5 +1,6 @@
-"""Stepshift
-from typing import List
+"""
+Stepshift
+=========
 
 Stepshifting is a procedure that is used when training models to predict future
 values of a dependent variable.
@@ -39,6 +40,22 @@ import xarray
 logger = logging.getLogger(__name__)
 
 def set_feature_as_first(x:str, array: xarray.DataArray)-> xarray.DataArray:
+    """
+    set_feature_as_first
+    ====================
+
+    parameters:
+        x (str):                  The feature name
+        array (xarray.DataArray): The array to manipulate
+
+    returns:
+        xarray.DataArray: Array with x set as the first (leftmost) feature
+
+    Utility function to ensure that x is the leftmost feature. Only manipulates
+    the array if necessary to avoid copying data. Necessary to ensure that
+    views are used, for memory efficiency.
+
+    """
     try:
         assert x in array.coords["feature"]
     except AssertionError:
@@ -61,7 +78,19 @@ def stepshifted(
         array: xarray.DataArray
         )-> Generator[Tuple[int, xarray.DataArray, xarray.DataArray], None, None]:
     """
-    Generator which yields a tuple of outcomes and inputs for each time-shift step.
+    stepshifted
+    ===========
+
+    parameters:
+        outcome (str): Name of the outcome dimension 
+        steps List[int]: Steps to shift
+        array (xarray.DataArray): Data to stepshift
+
+    returns:
+        Generator[Tuple[int, xarray.DataArray, xarray.DataArray], None, None]
+
+    Returns a generator which yields a tuple of outcomes and inputs for each
+    time-shift step without copying.
     """
     array = set_feature_as_first(outcome, array)
     outcomes = array[:,:,0]

@@ -11,40 +11,50 @@ import pandas as pd
 from sklearn.base import clone
 from stepshift import stepshift, cast, ops
 
-def step_combine(
-        predictions: pd.DataFrame,
-        column_step_mapping: Optional[Dict[str,int]] = None) -> pd.DataFrame:
-
-    units = np.unique(predictions.index.get_level_values(1).values)
-
-    if column_step_mapping is None:
-        column_step_mapping = infer_column_step_mapping(predictions.columns)
-
-    step_size = max(column_step_mapping.values())
-    times = predictions.index.get_level_values(0)
-    pred_start,pred_end = (fn(times) for fn in (min,max))
-    pred_period_size = (pred_end-pred_start)+1
-
-    data = np.stack([np.full(pred_period_size, np.NaN)]*len(units),axis=1)
-    step_combined = xa.DataArray(
-            data,
-            dims = ("time","unit"),
-            coords = {
-                "time": np.unique(times),
-                "unit":units})
-
-    sc_period_start = pred_end - (step_size)
-    for step_name, step_value in column_step_mapping.items():
-        sc_time = sc_period_start+step_value
-        step_combined.loc[sc_time,:] = predictions[[step_name]].loc[sc_time,:].squeeze()
-
-    return step_combined.stack(step_combined=("time","unit")).data
-
 class StepshiftedModels():
     """
-    A battery of stepshifted models, trained by  the classifier to
-    shifted data for each step. For n number of distinct steps (not necessarily
-    contiguous):
+    StepshiftedModels
+    =================
+
+    parameters:
+        clf (Classifier):  A scikit-learn classifier
+        steps (List[int]): A list of steps for which to train models
+        outcome (str):     The name of the column to use as the outcome.
+
+    example:
+        models = StepshiftedModels(
+                sklearn.linear_model.LogisticRegression(),
+                [1,2,3],
+                "outcome_column")
+
+    A battery of stepshifted models, trained by  the classifier to shifted data
+    for each step. Stepshifting means shifting the independent variables in
+    time n steps for each step n, and then training a model predicting the
+    dependent variable Y. This produces a set of models trained to predict
+    future outcomes, with varying time-scope. Such a set can be used to produce
+    a series of future predictions Ŷ where each prediction is the result of a
+    model trained specifically to predict that number of steps into the future:
+
+     t │ 1   2   3   4   5   6   7  
+     ────────────────────────────── 
+     x │ 1   1   1   1
+       │
+     x1│     1   1   1   1
+       │
+     x2│         1   1   1   1
+       │
+     x3│             1   1   1   1
+       │
+     Ŷ1│     1   1   1   1
+       │
+     Ŷ2│         2   2   2   2
+       │
+     Ŷ3│             3   3   3   3
+       │
+     Ŷ │                 1   2   3
+
+    For further elaboration of stepshifting, see appendix A of Hegre et al. 2020 
+    (10.1177/0022343320962157)
     """
 
     def __init__(self, clf, steps: List[int], outcome: str):
@@ -57,7 +67,27 @@ class StepshiftedModels():
 
     def fit(self, data):
         """
-        Fits one model per step, shifting the data in time appropriately.
+        fit
+        ===
+
+        parameters:
+            data (pandas.DataFrame): A time-unit indexed dataframe
+
+        example:
+            models = StepshiftedModels(
+                    sklearn.linear_model.LogisticRegression(),
+                    [1,2,3],
+                    "y")
+
+            df = pd.DataFrame(
+                np.zeros((32 * 32, 2)),
+                index = pd.MultiIndex.from_product((range(32), range(32)), names = ("time", "unit")),
+                columns = ["y", "x"])
+
+            models.fit(df)
+
+        Fits one model per time-step, to create a battery of models capable of
+        predicting future time outcomes. 
         """
         self._independent_variables = [c for c in data.columns if c != self._outcome]
 
@@ -77,15 +107,70 @@ class StepshiftedModels():
 
     def predict(self, data, combine: bool = True):
         """
-        Creates a dataset of predictions using the predict method of the
-        model(s).
+        predict
+        =======
+
+        parameters:
+            data (pandas.DataFrame): A time-unit indexed dataframe.
+            combine (bool): Create a step-combined column in the output?
+
+        returns:
+            pandas.DataFrame (time-unit indexed)
+
+        example:
+            models = StepshiftedModels(
+                    sklearn.linear_model.LogisticRegression(),
+                    [1,2,3],
+                    "y")
+
+            df = pd.DataFrame(
+                np.zeros((32 * 32, 2)),
+                index = pd.MultiIndex.from_product((range(32), range(32)), names = ("time", "unit")),
+                columns = ["y", "x"])
+
+            train,test = df.loc[0:12, :], df.loc[13:, :]
+
+            models.fit(train)
+            predictions = models.predict(test)
+
+        Creates a dataset of outcome predictions using the predict method of
+        the model(s). The combine argument decides whether to include a
+        step-combined column in the output. The output has columns named
+        "step_pred_{i}" with predictions for each step.
         """
         return self._predict(data, combine, kind = "predict")
 
     def predict_proba(self, data, combine: bool = True):
         """
-        Creates a dataset of predictions using the predict_proba method of the
-        model(s).
+        predict_proba
+        =======
+
+        parameters:
+            data (pandas.DataFrame): A time-unit indexed dataframe.
+            combine (bool): Create a step-combined column in the output?
+
+        returns:
+            pandas.DataFrame (time-unit indexed)
+
+        example:
+            models = StepshiftedModels(
+                    sklearn.linear_model.LogisticRegression(),
+                    [1,2,3],
+                    "y")
+
+            df = pd.DataFrame(
+                np.zeros((32 * 32, 2)),
+                index = pd.MultiIndex.from_product((range(32), range(32)), names = ("time", "unit")),
+                columns = ["y", "x"])
+
+            train,test = df.loc[0:12, :], df.loc[13:, :]
+
+            models.fit(train)
+            predictions = models.predict_proba(test)
+
+        Creates a dataset of probability predictions using the predict method
+        of the model(s). The combine argument decides whether to include a
+        step-combined column in the output.
         """
         return self._predict(data, combine, kind = "predict_proba")
 
@@ -196,7 +281,62 @@ class StepshiftedModels():
 
     _cast_tuf_to_views = staticmethod(cast.tuf_cube_as_dataframe)
 
-def infer_column_step_mapping(names: str):
+def step_combine(
+        predictions: pd.DataFrame,
+        column_step_mapping: Optional[Dict[str,int]] = None) -> np.ndarray:
+    """
+    step_combine
+    ============
+
+    parameters:
+        predictions (pandas.DataFrame):                 A dataframe containing predictions
+        column_step_mapping (Optional[Dict[str, int]]): Inferred if not provided, see infer_column_step_mapping
+
+    returns:
+        numpy.ndarray:                                  A 2nd order tensor containing the combined predictions
+
+    Combines predictions from the provided dataframe into a 2nd order tensor,
+    which can be assigned back into the dataframe to create a step_combined
+    column. Used internally by the StepshiftedModels class.
+    """
+
+    units = np.unique(predictions.index.get_level_values(1).values)
+
+    if column_step_mapping is None:
+        column_step_mapping = infer_column_step_mapping(predictions.columns)
+
+    step_size = max(column_step_mapping.values())
+    times = predictions.index.get_level_values(0)
+    pred_start,pred_end = (fn(times) for fn in (min,max))
+    pred_period_size = (pred_end-pred_start)+1
+
+    data = np.stack([np.full(pred_period_size, np.NaN)]*len(units),axis=1)
+    step_combined = xa.DataArray(
+            data,
+            dims = ("time","unit"),
+            coords = {
+                "time": np.unique(times),
+                "unit":units})
+
+    sc_period_start = pred_end - (step_size)
+    for step_name, step_value in column_step_mapping.items():
+        sc_time = sc_period_start+step_value
+        step_combined.loc[sc_time,:] = predictions[[step_name]].loc[sc_time,:].squeeze()
+
+    return step_combined.stack(step_combined=("time","unit")).data
+
+def infer_column_step_mapping(names: List[str]):
+    """
+    infer_column_step_mapping
+    =========================
+
+    parameters:
+        names (List[str]): A list of column names
+
+    returns:
+        Dict[str, int]: Names mapped to step numbers (if applicable).
+
+    """
     step_pred_column_name_regex = f"(?<={StepshiftedModels.step_pred_column_name('')})[0-9]+"
     step_name_from_column_name = compose(
             lambda m: m.maybe(None,int),
