@@ -33,27 +33,9 @@ class StepshiftedModels():
     dependent variable Y. This produces a set of models trained to predict
     future outcomes, with varying time-scope. Such a set can be used to produce
     a series of future predictions Ŷ where each prediction is the result of a
-    model trained specifically to predict that number of steps into the future:
+    model trained specifically to predict that number of steps into the future.
 
-     t │ 1   2   3   4   5   6   7  
-     ────────────────────────────── 
-     x │ 1   1   1   1
-       │
-     x1│     1   1   1   1
-       │
-     x2│         1   1   1   1
-       │
-     x3│             1   1   1   1
-       │
-     Ŷ1│     1   1   1   1
-       │
-     Ŷ2│         2   2   2   2
-       │
-     Ŷ3│             3   3   3   3
-       │
-     Ŷ │                 1   2   3
-
-    For further elaboration of stepshifting, see appendix A of Hegre et al. 2020 
+    For further elaboration of stepshifting, see appendix A of Hegre et al. 2020
     (10.1177/0022343320962157)
     """
 
