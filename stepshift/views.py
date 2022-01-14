@@ -1,6 +1,7 @@
 """
 APIs used by the ViEWS team.
 """
+import logging
 import re
 from typing import List, Optional, Dict, Literal
 from toolz.functoolz import compose, curry
@@ -10,6 +11,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from stepshift import stepshift, cast, ops
+
+logger = logging.getLogger(__name__)
 
 class StepshiftedModels():
     """
@@ -69,7 +72,7 @@ class StepshiftedModels():
             models.fit(df)
 
         Fits one model per time-step, to create a battery of models capable of
-        predicting future time outcomes. 
+        predicting future time outcomes.
         """
         self._independent_variables = [c for c in data.columns if c != self._outcome]
 
@@ -77,14 +80,18 @@ class StepshiftedModels():
         for step, dep, indep in stepshift.stepshifted(self._outcome, self._steps, cube):
             dep,indep = [cast.stack_time_unit_feature_cube(xa).data for xa in (dep,indep)]
             dep = dep.reshape(dep.shape[0],1)
+
+            logger.debug(f"Dep. values of shape {dep.shape}")
+            logger.debug(f"Indep. values of shape {indep.shape}")
             dep_indep = ops.rowwise_nonmissing([dep,indep])
 
             try:
-                assert dep_indep.is_just
+                assert dep_indep.is_just()
             except AssertionError:
                 raise ValueError("Dependent and independent arrays had differing number of rows")
 
             dep,indep = dep_indep.value
+            logger.debug(f"Saving model {step}")
             self._models[step] = clone(self._base_clf).fit(indep,dep.squeeze())
 
     def predict(self, data, combine: bool = True):
@@ -233,6 +240,7 @@ class StepshiftedModels():
 
         raw_idx = np.array([np.array(i) for i in data.index.values])
         for step_column_name, (step, model) in zip(preds.coords["feature"],self._models.items()):
+            logger.debug(f"Making predictions for model {step} ({step_column_name.data})")
 
             raw_predictions = self._ensure_predictions_shape(
                     getattr(model, kind)(data[self._independent_variables].values))
@@ -248,7 +256,21 @@ class StepshiftedModels():
                     )
 
             pred_start, pred_end = [fn(cube.coords["time"]) for fn in (min,max)]
-            preds.loc[pred_start:pred_end, :, step_column_name] = cube.data.squeeze()
+            dat = cube.data.squeeze()
+
+
+            # Ensure that data is two-dimensional (force 1-sized dimension in second dim if necessary)
+            if len(dat.shape) == 0:
+                dat = dat[np.newaxis, np.newaxis]
+            elif len(dat.shape) == 1:
+                dat = dat[: , np.newaxis]
+            else:
+                pass
+
+            logger.debug(f"Preds of shape {dat.shape}")
+
+            preds.loc[pred_start:pred_end, :, step_column_name] = dat
+
 
         df = self._cast_tuf_to_views(preds)
 

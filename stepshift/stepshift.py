@@ -82,7 +82,7 @@ def stepshifted(
     ===========
 
     parameters:
-        outcome (str): Name of the outcome dimension 
+        outcome (str): Name of the outcome dimension
         steps List[int]: Steps to shift
         array (xarray.DataArray): Data to stepshift
 
@@ -96,4 +96,4 @@ def stepshifted(
     outcomes = array[:,:,0]
     inputs = array[:,:,1:]
     for step in steps:
-        yield step, outcomes[step:,:], inputs[:-step,:,:]
+        yield step, outcomes[step:,:], inputs[:(-step if step != 0 else None),:,:]
