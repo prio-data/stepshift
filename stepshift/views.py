@@ -226,12 +226,13 @@ class StepshiftedModels():
 
     def _predict(self, data,
             combine: bool = True,
-            kind: Literal["predict", "predict_proba"] = "predict"):
+            kind: Literal["predict", "predict_proba"] = "predict") -> pd.DataFrame:
         """
         Uses the trained models to create a dataset of predictions.
         """
 
         data = self._pre_sort(data)
+        preexisting_index_names = data.index.names
 
         preds = self._empty_prediction_array(
                 np.unique(data.index.get_level_values(0)),
@@ -276,6 +277,8 @@ class StepshiftedModels():
 
         if combine:
             df["step_combined"] = step_combine(df)
+
+        df.index.names = preexisting_index_names
 
         return df
 

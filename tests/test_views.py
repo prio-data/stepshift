@@ -79,3 +79,15 @@ class TestViews(unittest.TestCase):
         mdl.fit(data)
         pred = mdl.predict(data)
         np.testing.assert_array_equal(pred.loc[9,:].values[:,0], np.array([1,1,1]))
+
+    def test_retains_index_names(self):
+        data = pd.DataFrame(
+                np.random.rand(400,2),
+                index = pd.MultiIndex.from_product([range(100), range(4)], names = ["time","unit"]),
+                columns = ["dep","indep"])
+        model = views.StepshiftedModels(DummyClassifier(),[1,2], "dep")
+        model.fit(data)
+        preds = model.predict(data)
+        print(preds)
+
+        self.assertEqual(preds.index.names, data.index.names)
