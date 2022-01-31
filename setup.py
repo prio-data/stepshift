@@ -1,4 +1,5 @@
 
+from pathlib import Path
 from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
 import numpy as np
@@ -11,10 +12,15 @@ extensions = [
             )
     ]
 
+here = Path(__file__).parent
+long_description = (here / "README.md").read_text()
+
 setup(
     name = "stepshift",
-    version = "2.2.1",
+    version = "2.2.2",
     python_requires=">=3.8,<3.10",
+    author="peder2911",
+    author_email="pglandsverk@gmail.com",
     install_requires=[
         "pandas>=1.3.2",
         "PyMonad>=2.4.0",
@@ -28,5 +34,8 @@ setup(
                     "language_level": "3str",
                 }
             ),
-            annotate = True
+    annotate = True,
+    long_description = long_description,
+    long_description_content_type = "text/markdown",
+    url = "https://www.github.com/prio-data/stepshift",
         )
