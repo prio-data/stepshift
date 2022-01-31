@@ -17,10 +17,11 @@ long_description = (here / "README.md").read_text()
 
 setup(
     name = "stepshift",
-    version = "2.2.2",
+    version = "2.2.3",
     python_requires=">=3.8,<3.10",
     author="peder2911",
     author_email="pglandsverk@gmail.com",
+    description = "Implementation of the Views stepshifting modelling framework",
     install_requires=[
         "pandas>=1.3.2",
         "PyMonad>=2.4.0",
