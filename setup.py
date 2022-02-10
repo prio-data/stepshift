@@ -17,15 +17,12 @@ long_description = (here / "README.md").read_text()
 
 setup(
     name = "stepshift",
-    version = "2.2.3",
-    python_requires=">=3.8,<3.10",
-<<<<<<< HEAD
-    license_files = ("LICENSE",),
-=======
     author="peder2911",
     author_email="pglandsverk@gmail.com",
     description = "Implementation of the Views stepshifting modelling framework",
->>>>>>> bd2dcfc7593752f217f925fa6d63e0641ef06d7f
+    version = "2.2.3",
+    python_requires=">=3.8,<3.10",
+    license_files = ("LICENSE",),
     install_requires=[
         "pandas>=1.3.2",
         "PyMonad>=2.4.0",
