@@ -15,6 +15,7 @@ setup(
     name = "stepshift",
     version = "2.0.0",
     python_requires=">=3.8,<3.10",
+    license_files = ("LICENSE",),
     install_requires=[
         "pandas>=1.3.2",
         "PyMonad>=2.4.0",
