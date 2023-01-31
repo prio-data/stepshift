@@ -20,7 +20,7 @@ setup(
     author="peder2911",
     author_email="pglandsverk@gmail.com",
     description = "Implementation of the Views stepshifting modelling framework",
-    version = "2.2.4",
+    version = "2.2.5",
     python_requires=">=3.8",
     license_files = ("LICENSE",),
     install_requires=[
