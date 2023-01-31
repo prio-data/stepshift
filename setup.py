@@ -20,14 +20,14 @@ setup(
     author="peder2911",
     author_email="pglandsverk@gmail.com",
     description = "Implementation of the Views stepshifting modelling framework",
-    version = "2.2.3",
-    python_requires=">=3.8,<3.10",
+    version = "2.2.4",
+    python_requires=">=3.8",
     license_files = ("LICENSE",),
     install_requires=[
         "pandas>=1.3.2",
         "PyMonad>=2.4.0",
         "toolz>=0.11.1",
-        "xarray>=0.19.0,<0.21.0",
+        "xarray>=0.19.0",
         ],
     packages = find_packages(),
     ext_modules = cythonize(
